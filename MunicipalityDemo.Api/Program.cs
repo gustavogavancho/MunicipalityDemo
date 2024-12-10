@@ -29,7 +29,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/{municipalityId:int}", async (int municipalityId, IMunicipalityRepository municipalityRepository, IMapper mapper) =>
+app.MapGet("/{municipalityId:int}/demo", async (int municipalityId, IMunicipalityRepository municipalityRepository, IMapper mapper) =>
 {
     var municipality = await municipalityRepository.GetMunicipalityById(municipalityId);
 
