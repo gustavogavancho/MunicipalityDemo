@@ -1,13 +1,26 @@
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using MunicipalityDemo.Api.Data;
+using MunicipalityDemo.Api.Dtos;
+using MunicipalityDemo.Api.Profiles;
+using MunicipalityDemo.Api.Repository;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddDbContext<MunicipalityContext>(x => x.UseSqlite(builder.Configuration.GetConnectionString("MunicipalityDB")));
+builder.Services.AddScoped<IMunicipalityRepository, MunicipalityRepository>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<MunicipalityContext>();
+    await dbContext.Database.EnsureCreatedAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -16,29 +29,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
+app.MapGet("/{municipalityId:int}", async (int municipalityId, IMunicipalityRepository municipalityRepository, IMapper mapper) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    var municipality = await municipalityRepository.GetMunicipalityById(municipalityId);
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
+    if (municipality == null) return Results.NotFound($"Municipality with id {municipalityId} was not found.");
+
+    var municipalityResponse = mapper.Map<MunicipalityDto>(municipality);
+
+    return Results.Ok(municipalityResponse);
 })
-.WithName("GetWeatherForecast")
+.WithName("GetMunicipalityById")
 .WithOpenApi();
 
 app.Run();
-
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
