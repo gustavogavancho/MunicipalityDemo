@@ -39,7 +39,7 @@ app.MapGet("/{municipalityId:int}/demo", async (int municipalityId, IMunicipalit
 
     return Results.Ok(municipalityResponse);
 })
-.WithName("GetMeteorologicalInfoById")
+.WithName("GetDemographicInfoById")
 .WithOpenApi();
 
 app.Run();
